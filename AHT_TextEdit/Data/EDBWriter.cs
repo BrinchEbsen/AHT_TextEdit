@@ -1,0 +1,67 @@
+﻿using AHT_TextEdit.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AHT_TextEdit.Data
+{
+    internal class EDBWriter : BinaryWriter
+    {
+        private Endian Endian;
+
+        public EDBWriter(FileStream stream, Encoding encoding, Endian Endian) : base(stream, encoding, false)
+        {
+            this.Endian = Endian;
+        }
+
+        public override void Write(short value)
+        {
+            if (Endian == Endian.Big)
+            {
+                base.Write(ByteSwapper.SwapBytes((ushort)value));
+            } else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(ushort value)
+        {
+            if (Endian == Endian.Big)
+            {
+                base.Write(ByteSwapper.SwapBytes(value));
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(int value)
+        {
+            if (Endian == Endian.Big)
+            {
+                base.Write(ByteSwapper.SwapBytes((uint)value));
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+
+        public override void Write(uint value)
+        {
+            if (Endian == Endian.Big)
+            {
+                base.Write(ByteSwapper.SwapBytes(value));
+            }
+            else
+            {
+                base.Write(value);
+            }
+        }
+    }
+}
