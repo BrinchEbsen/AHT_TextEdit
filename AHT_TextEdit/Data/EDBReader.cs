@@ -9,9 +9,10 @@ using System.Threading.Tasks;
 
 namespace AHT_TextEdit.Data
 {
-    /*
-     * Extends BinaryReader such that binary data can be read regardless of endianness
-     */
+    /// <summary>
+    /// Bad name, I know.
+    /// Extends BinaryReader to add extra handling for endianness.
+    /// </summary>
     internal class EDBReader : BinaryReader
     {
         private Endian Endian;

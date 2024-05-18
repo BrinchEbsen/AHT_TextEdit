@@ -433,6 +433,8 @@ namespace AHT_TextEdit
                     try
                     {
                         FileHandler.WriteFile(filePath, Platform, ViewingFile);
+                        MessageBox.Show("Saved .edb file to "+filePath, "Export success",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (IOException ex)
                     {

@@ -115,6 +115,8 @@ namespace AHT_TextEdit.Data
         public uint[] DataBlob;
         public long DataBlobEndAddress;
 
+        public int RefPointerStartAddress;
+
         public GamePlatform Platform;
         public SectionList SectionList;
         public SpreadSheetSectionList SpreadSheetSectionList;

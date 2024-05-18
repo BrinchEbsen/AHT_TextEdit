@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 
 namespace AHT_TextEdit.Data
 {
+    /// <summary>
+    /// Bad name, I know.
+    /// Extends BinaryWriter to add extra handling for endianness.
+    /// </summary>
     internal class EDBWriter : BinaryWriter
     {
         private Endian Endian;

@@ -64,7 +64,7 @@ namespace AHT_TextEdit.Data
                 using (var reader = new EDBReader(stream, Encoding, Endian))
                 {
                     //First, check if the text spreadsheet exists.
-                    stream.Seek(((long)Struct_GeoHeader.SpreadSheetList), SeekOrigin.Begin);
+                    stream.Seek((long)Struct_GeoHeader.SpreadSheetList, SeekOrigin.Begin);
 
                     short spreadSheetsSize = reader.ReadInt16();
                     stream.Seek(2, SeekOrigin.Current); //Skip past HashSize
@@ -86,7 +86,7 @@ namespace AHT_TextEdit.Data
                     //Create list of sections
                     SectionList sectionList = new SectionList();
 
-                    stream.Seek(((long)Struct_GeoHeader.SectionList), SeekOrigin.Begin);
+                    stream.Seek((long)Struct_GeoHeader.SectionList, SeekOrigin.Begin);
 
                     sectionList.Size = reader.ReadInt16();
 
@@ -94,11 +94,13 @@ namespace AHT_TextEdit.Data
 
                     sectionList.Address = reader.ReadRelPtr().GetAbsoluteAddress();
 
-                    Console.WriteLine("Section List starts at "+sectionList.Address);
+                    //Get the base address of the refpointer list, for writing pointers ón export later
+                    stream.Seek((long)Struct_GeoHeader.RefPointerList + 4, SeekOrigin.Begin);
+                    textEDB.RefPointerStartAddress = reader.ReadRelPtr().GetAbsoluteAddress();
 
 
+                    //Read section list data
                     stream.Seek(sectionList.Address, SeekOrigin.Begin);
-
                     sectionList.Items = new List<Section>();
                     for (int i = 0; i < sectionList.Size; i++)
                     {
@@ -116,6 +118,7 @@ namespace AHT_TextEdit.Data
 
 
                     //Read text entries
+
                     SpreadSheetSectionList spreadSheetSectionList = new SpreadSheetSectionList();
                     spreadSheetSectionList.Items = new List<SpreadSheetSection>();
                     bool firstSection = true;
@@ -294,12 +297,13 @@ namespace AHT_TextEdit.Data
                     //Write text spreadsheet
 
                     //Save pointers for later
-                    List<long> SheetSectionPtrs = new List<long>();
+                    List<long> SheetSectionStartPtrs = new List<long>();
+                    List<long> SheetSectionEndPtrs   = new List<long>();
 
                     //Write each section
                     foreach (SpreadSheetSection section in textEDB.SpreadSheetSectionList.Items)
                     {
-                        SheetSectionPtrs.Add(writer.BaseStream.Position);
+                        SheetSectionStartPtrs.Add(writer.BaseStream.Position);
 
                         //Starting addresses of list and text data
                         int listStartAddress = (int)writer.BaseStream.Position;
@@ -371,6 +375,9 @@ namespace AHT_TextEdit.Data
                             textCurr = (int)writer.BaseStream.Position;
                         }
 
+                        //Save section end pointer
+                        SheetSectionEndPtrs.Add(textCurr);
+
                         //Update EndAddress pointer at start of list
                         writer.Seek(listStartAddress, SeekOrigin.Begin);
                         writer.Write(textCurr);
@@ -379,9 +386,45 @@ namespace AHT_TextEdit.Data
                         writer.Seek(textCurr, SeekOrigin.Begin);
                     }
 
-                    //Overwrite pointers in data blob
+                    //Store end of file for later
+                    long eof = writer.BaseStream.Position;
 
+                    //Overwrite pointers in data blob, so it matches our newly written data
 
+                    //Overwrite filesize
+                    writer.Seek((int)Struct_GeoHeader.FileSize, SeekOrigin.Begin);
+                    writer.Write((int)eof);
+
+                    //Overwrite debug section info (even if unused)
+                    writer.Seek((int)Struct_GeoHeader.DebugSectionStart, SeekOrigin.Begin);
+                    writer.Write((int)eof);
+                    //Not sure why, but the debug section is always defined to be 0xB0 long, even though it'd be past EOF
+                    writer.Write((int)eof + 0xB0);
+
+                    //Overwrite section list pointers (skip ahead 16 bytes to the sections we care about)
+                    writer.Seek(textEDB.SectionList.Address + 16, SeekOrigin.Begin);
+                    for (int i = 0; i < SheetSectionStartPtrs.Count; i++)
+                    {
+                        writer.Seek(4, SeekOrigin.Current);
+                        //Overwrite with our saved pointers from earlier
+                        writer.Write((int)SheetSectionStartPtrs[i]);
+                        writer.Write((int)SheetSectionEndPtrs[i]);
+                        writer.Seek(4, SeekOrigin.Current);
+                    }
+
+                    //Overwrite refpointer list pointers
+                    writer.Seek(textEDB.RefPointerStartAddress, SeekOrigin.Begin);
+                    for (int i = 0; i < SheetSectionStartPtrs.Count; i++)
+                    {
+                        //Get section number at this list entry by accessing the data blob
+                        int sectionNr = (int)textEDB.DataBlob[(writer.BaseStream.Position / 4) + 1];
+                        sectionNr >>= 0x10; //Shift right 2 bytes because it was a short
+
+                        writer.Seek(8, SeekOrigin.Current);
+                        //Overwrite with new pointer. For some reason the pointer is 0x10 bytes further.
+                        writer.Write((int)SheetSectionStartPtrs[sectionNr-1] + 0x10);
+                        writer.Seek(4, SeekOrigin.Current);
+                    }
                 }
             }
         }

@@ -61,12 +61,12 @@ namespace AHT_TextEdit
 
             mainWindow.UpdateTextItem(item);
 
-            this.Close();
+            Close();
         }
 
         private void Btn_Cancel_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }
