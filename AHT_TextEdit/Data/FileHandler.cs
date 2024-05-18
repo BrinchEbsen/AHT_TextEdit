@@ -364,12 +364,23 @@ namespace AHT_TextEdit.Data
                             }
                         }
 
-                        //Add padding bytes to align to 0x20
+                        //Add padding bytes to make sections align
+
+                        int align;
+                        if (Platform == GamePlatform.GameCube)
                         {
-                            int leftOver = (int)writer.BaseStream.Position % 0x20;
+                            align = 0x20;
+                        } else //PS2 or Xbox
+                        {
+                            align = 0x800;
+                        }
+
+                        {
+                            int leftOver = (int)writer.BaseStream.Position % align;
                             if (leftOver != 0)
                             {
-                                writer.Seek(0x20 - leftOver, SeekOrigin.Current);
+                                writer.Seek(align - leftOver - 4, SeekOrigin.Current);
+                                writer.Write(0); //We need to actually write something there to make it stick
                             }
 
                             textCurr = (int)writer.BaseStream.Position;
@@ -418,7 +429,11 @@ namespace AHT_TextEdit.Data
                     {
                         //Get section number at this list entry by accessing the data blob
                         int sectionNr = (int)textEDB.DataBlob[(writer.BaseStream.Position / 4) + 1];
-                        sectionNr >>= 0x10; //Shift right 2 bytes because it was a short
+
+                        //We read a short as a uint when creating the datablob. If it's big endian we'll need to shift right by 2 bytes.
+                        if (Endian == Endian.Big) {
+                            sectionNr >>= 0x10;
+                        }
 
                         writer.Seek(8, SeekOrigin.Current);
                         //Overwrite with new pointer. For some reason the pointer is 0x10 bytes further.
