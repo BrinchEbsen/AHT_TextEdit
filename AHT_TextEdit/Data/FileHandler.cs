@@ -379,7 +379,9 @@ namespace AHT_TextEdit.Data
                         writer.Seek(textCurr, SeekOrigin.Begin);
                     }
 
-                    // TODO: Overwrite pointers in data blob
+                    //Overwrite pointers in data blob
+
+
                 }
             }
         }

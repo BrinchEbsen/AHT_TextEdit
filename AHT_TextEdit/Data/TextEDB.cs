@@ -108,6 +108,10 @@ namespace AHT_TextEdit.Data
 
     public class TextEDB
     {
+        /// <summary>
+        /// Data from the source .edb file that is positioned before the spreadsheet data.
+        /// It is written back into the output file on export, and the pointers inside are updated.
+        /// </summary>
         public uint[] DataBlob;
         public long DataBlobEndAddress;
 
